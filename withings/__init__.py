@@ -143,6 +143,10 @@ class WithingsApi(object):
         r = self.request('measure', 'getmeas', kwargs)
         return WithingsMeasures(r)
 
+    def get_activities(self, **kwargs):
+        r = self.request('v2/measure', 'getactivity', kwargs)
+        return r
+        
     def subscribe(self, callback_url, comment, appli=1):
         params = {'callbackurl': callback_url,
                   'comment': comment,
@@ -168,8 +172,9 @@ class WithingsApi(object):
 
 class WithingsMeasures(list):
     def __init__(self, data):
-        super(WithingsMeasures, self).__init__([WithingsMeasureGroup(g) for g in data['measuregrps']])
+        super(WithingsMeasures, self).__init__([WithingsMeasureGroup({"data":g,"timezone":data["timezone"]}) for g in data['measuregrps']])
         self.updatetime = datetime.datetime.fromtimestamp(data['updatetime'])
+        self.timezone = data["timezone"]
 
 
 class WithingsMeasureGroup(object):
@@ -179,12 +184,16 @@ class WithingsMeasureGroup(object):
                      ('heart_pulse', 11))
 
     def __init__(self, data):
+        self.timezone = data["timezone"]
+        data =  data["data"]
+        data["timezone"] = self.timezone
         self.data = data
         self.grpid = data['grpid']
         self.attrib = data['attrib']
         self.category = data['category']
         self.date = datetime.datetime.fromtimestamp(data['date'])
         self.measures = data['measures']
+
         for n, t in self.MEASURE_TYPES:
             self.__setattr__(n, self.get_measure(t))
 
