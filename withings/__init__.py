@@ -130,7 +130,10 @@ class WithingsApi(object):
         if params is None:
             params = {}
         params['action'] = action
-        r = self.client.request(method, '%s/%s' % (self.URL, service), params=params)
+        if action == "getactivity" or action == "getsummary":
+            r = self.client.request(method, '%s/%s/%s' % (self.URL, "v2", service), params=params)
+        else:
+            r = self.client.request(method, '%s/%s' % (self.URL, service), params=params)
         response = json.loads(r.content.decode())
         if response['status'] != 0:
             raise WithingsError(response['status'])
@@ -142,6 +145,25 @@ class WithingsApi(object):
     def get_measures(self, **kwargs):
         r = self.request('measure', 'getmeas', kwargs)
         return WithingsMeasures(r)
+
+    #Method added for activities
+    def get_activity(self, **kwargs):
+        r = self.request('measure', 'getactivity',kwargs)
+        return WithingsMeasures(r)
+
+    #Method added for daily activity
+    def get_daily_activity(self, **kwargs):
+        #TODO
+        r = self.request('measure', 'getactivity',kwargs)
+        print "day_act::::", r
+        return ""
+
+    #Method added for sleep summary
+    def get_sleep_summary(self, **kwargs):
+        #TODO
+        r = self.request('sleep', 'getsummary',kwargs)
+        print "sleep::::", r
+        return ""
 
     def subscribe(self, callback_url, comment, appli=1):
         params = {'callbackurl': callback_url,
@@ -168,8 +190,20 @@ class WithingsApi(object):
 
 class WithingsMeasures(list):
     def __init__(self, data):
-        super(WithingsMeasures, self).__init__([WithingsMeasureGroup(g) for g in data['measuregrps']])
-        self.updatetime = datetime.datetime.fromtimestamp(data['updatetime'])
+        if 'activities' in data:
+            #return objects to keep the client api structure
+            super(WithingsMeasures, self).__init__([WithingsActivityGroup(g) for g in data['activities']])
+        else:
+            super(WithingsMeasures, self).__init__([WithingsMeasureGroup(g) for g in data['measuregrps']])
+            self.updatetime = datetime.datetime.fromtimestamp(data['updatetime'])
+
+#Activity Class added for Activity objects
+class WithingsActivityGroup(object):
+    def __init__(self, data):
+        self.data = data
+        self.date = data["date"]
+        self.timezone = data["timezone"]
+        self.totalcalories = data["totalcalories"]
 
 
 class WithingsMeasureGroup(object):
@@ -202,3 +236,4 @@ class WithingsMeasureGroup(object):
             if m['type'] == measure_type:
                 return m['value'] * pow(10, m['unit'])
         return None
+
