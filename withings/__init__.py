@@ -130,10 +130,8 @@ class WithingsApi(object):
         if params is None:
             params = {}
         params['action'] = action
-        if action == "getactivity" or action == "getsummary":
-            r = self.client.request(method, '%s/%s/%s' % (self.URL, "v2", service), params=params)
-        else:
-            r = self.client.request(method, '%s/%s' % (self.URL, service), params=params)
+        r = self.client.request(method, '%s/%s' % (self.URL, service), params=params)
+        print "UURRLL",r.url
         response = json.loads(r.content.decode())
         if response['status'] != 0:
             raise WithingsError(response['status'])
@@ -148,7 +146,7 @@ class WithingsApi(object):
 
     #Method added for activities
     def get_activity(self, **kwargs):
-        r = self.request('measure', 'getactivity',kwargs)
+        r = self.request('v2/measure', 'getactivity',kwargs)
         return WithingsMeasures(r)
 
     #Method added for daily activity
@@ -158,12 +156,24 @@ class WithingsApi(object):
         print "day_act::::", r
         return ""
 
+    def get_intraday_activity(self, **kwargs):
+        #TODO. Requires special activation.
+        r = self.request('v2/measure', 'getintradayactivity',kwargs)
+        print "intraday_act::::", r
+        return ""
+
+    def get_sleep(self, **kwargs):
+        #TODO
+        r = self.request('v2/sleep', 'get',kwargs)
+        print "sleep::::", r
+        return ""        
+
     #Method added for sleep summary
     def get_sleep_summary(self, **kwargs):
         #TODO
-        r = self.request('sleep', 'getsummary',kwargs)
-        print "sleep::::", r
-        return ""
+        r = self.request('v2/sleep', 'getsummary',kwargs)
+        print "sleepsum::::", r
+        return WithingsMeasures(r)
 
     def subscribe(self, callback_url, comment, appli=1):
         params = {'callbackurl': callback_url,
@@ -193,6 +203,9 @@ class WithingsMeasures(list):
         if 'activities' in data:
             #return objects to keep the client api structure
             super(WithingsMeasures, self).__init__([WithingsActivityGroup(g) for g in data['activities']])
+        elif 'series' in data:
+            if 'more' in data:
+                super(WithingsMeasures, self).__init__([WithingsActivityGroup({"data":g,"more":data["more"]}) for g in data['series']])
         else:
             super(WithingsMeasures, self).__init__([WithingsMeasureGroup(g) for g in data['measuregrps']])
             self.updatetime = datetime.datetime.fromtimestamp(data['updatetime'])
@@ -204,6 +217,8 @@ class WithingsActivityGroup(object):
         self.date = data["date"]
         self.timezone = data["timezone"]
         self.totalcalories = data["totalcalories"]
+
+class WithingsSleepSummaryGroup()
 
 
 class WithingsMeasureGroup(object):
