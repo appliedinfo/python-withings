@@ -132,7 +132,6 @@ class WithingsApi(object):
             params = {}
         params['action'] = action
         r = self.client.request(method, '%s/%s' % (self.URL, service), params=params)
-        print "UURRLL",r.url
         response = json.loads(r.content.decode())
         if response['status'] != 0:
             raise WithingsError(response['status'])
@@ -222,6 +221,7 @@ class WithingsSleepSummaryGroup():
         self.id = data['id']
         self.date = data['date']
         self.timezone = data['timezone']
+        self.modified = data['modified']
         self.model = data['model']
 
 
